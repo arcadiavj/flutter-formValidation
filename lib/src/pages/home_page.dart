@@ -31,12 +31,48 @@ class HomePage extends StatelessWidget {
         builder: (BuildContext context,
             AsyncSnapshot<List<ProductoModel>> snapshot) {
           if (snapshot.hasData) {
-            return Container();
+            final productos = snapshot.data;
+            return ListView.builder(
+              itemCount: productos.length,
+              itemBuilder: (context, i) {
+                return _crearItem(context, productos[i]);
+              },
+            );
           } else {
             return Center(
               child: CircularProgressIndicator(),
             );
           }
         });
+  }
+
+  _crearItem(BuildContext context, ProductoModel producto) {
+    return Dismissible(
+        key: UniqueKey(),
+        background: Container(
+          color: Colors.red,
+        ),
+        onDismissed: (direccion) {
+          productosProvider.borrarProducto(producto.id);
+        },
+        child: Card(
+            child: Column(
+          children: [
+            (producto.fotoUrl == null)
+                ? Image(image: AssetImage('lib/assets/no-image.png'))
+                : FadeInImage(
+                    placeholder: AssetImage('lib/assets/jar-loading.gif'),
+                    image: NetworkImage(producto.fotoUrl),
+                    height: 300.0,
+                    width: double.infinity,
+                    fit: BoxFit.cover),
+            ListTile(
+              title: Text('${producto.titulo}- ${producto.valor}'),
+              subtitle: Text(producto.id),
+              onTap: () =>
+                  Navigator.pushNamed(context, 'producto', arguments: producto),
+            )
+          ],
+        )));
   }
 }

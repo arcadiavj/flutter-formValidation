@@ -1,8 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:formvalidation/src/models/prodcto_model.dart';
 import 'package:formvalidation/src/providers/productos_providers.dart';
 import 'package:formvalidation/src/utils/utils.dart' as utils;
+import 'package:image_picker/image_picker.dart';
 
 class ProcutoPage extends StatefulWidget {
   @override
@@ -11,18 +14,27 @@ class ProcutoPage extends StatefulWidget {
 
 class _ProcutoPageState extends State<ProcutoPage> {
   final formKey = GlobalKey<FormState>();
+  final scaffoldKey = GlobalKey<ScaffoldState>();
   ProductoModel producto = new ProductoModel();
   final productoProvider = new ProductosProvider();
+  bool _guardando = false;
+  File foto;
 
   @override
   Widget build(BuildContext context) {
+    final ProductoModel prodData = ModalRoute.of(context).settings.arguments;
+    if (prodData != null) {
+      producto = prodData;
+    }
     return Scaffold(
+        key: scaffoldKey,
         appBar: AppBar(
           title: Text('Producto'),
           actions: [
             IconButton(
-                icon: Icon(Icons.photo_size_select_actual), onPressed: () {}),
-            IconButton(icon: Icon(Icons.camera_alt), onPressed: () {})
+                icon: Icon(Icons.photo_size_select_actual),
+                onPressed: _seleccionarFoto),
+            IconButton(icon: Icon(Icons.camera_alt), onPressed: _tomarFoto)
           ],
         ),
         body: SingleChildScrollView(
@@ -32,6 +44,7 @@ class _ProcutoPageState extends State<ProcutoPage> {
                 key: formKey,
                 child: Column(
                   children: [
+                    _mostrarFoto(),
                     _crearNombre(),
                     _crearPrecio(),
                     _crearBoton(),
@@ -86,23 +99,41 @@ class _ProcutoPageState extends State<ProcutoPage> {
     return RaisedButton.icon(
       icon: Icon(Icons.save),
       label: Text('Guardar'),
-      onPressed: () {
-        _submit();
-      },
+      onPressed: (_guardando) ? null : _submit,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0)),
       color: Colors.deepPurple,
       textColor: Colors.white,
     );
   }
 
-  void _submit() {
+  void _submit() async {
     if (!formKey.currentState.validate()) return;
     formKey.currentState.save();
-    print('todo OK');
-    print(producto.titulo);
-    print(producto.valor);
-    print(producto.disponible);
-    productoProvider.creaProducto(producto);
+    setState(() {
+      _guardando = true;
+    });
+    if (foto != null) {
+      producto.fotoUrl = await productoProvider.subirImagen(foto);
+    }
+
+    if (producto.id == null) {
+      productoProvider.creaProducto(producto);
+    } else {
+      productoProvider.editarProducto(producto);
+    }
+    setState(() {
+      _guardando = false;
+    });
+    mostrarSnackbar('OBJETO GUARDADO');
+    Navigator.pop(context);
+  }
+
+  void mostrarSnackbar(String mensaje) {
+    final snackBar = SnackBar(
+      content: Text(mensaje),
+      duration: Duration(milliseconds: 1500),
+    );
+    scaffoldKey.currentState.showSnackBar(snackBar);
   }
 
   _crearDisponible() {
@@ -114,5 +145,52 @@ class _ProcutoPageState extends State<ProcutoPage> {
           producto.disponible = valor;
           setState(() {});
         });
+  }
+
+  _tomarFoto() async {
+    _procesarImagen(ImageSource.camera);
+  }
+
+  _mostrarFoto() {
+    if (producto.fotoUrl != null) {
+      return FadeInImage(
+        placeholder: AssetImage('lib/assets/no-image.jpg'),
+        image: NetworkImage(producto.fotoUrl),
+        height: 300.0,
+        fit: BoxFit.contain,
+      );
+    } else {
+      if (foto != null) {
+        return Image.file(
+          foto,
+          height: 300.0,
+          fit: BoxFit.cover,
+        );
+      }
+      return Image.asset('lib/assets/no-image.png');
+    }
+  }
+
+  _seleccionarFoto() async {
+    _procesarImagen(ImageSource.gallery);
+  }
+
+  _procesarImagen(ImageSource origen) async {
+    final _picker = ImagePicker();
+
+    final pickedFile = await _picker.getImage(
+      source: origen,
+    );
+    if (foto != null) {
+      //limpiea
+    }
+
+    foto = File(pickedFile.path);
+
+    /*if (foto != null) {
+      producto.urlImg = null;
+    }*/
+
+    setState(() {});
   }
 }
