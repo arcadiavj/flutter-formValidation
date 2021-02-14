@@ -3,7 +3,7 @@ import 'package:formvalidation/src/blocs/provider.dart';
 import 'package:formvalidation/src/providers/usuario_provider.dart';
 import 'package:formvalidation/src/utils/utils.dart';
 
-class LoginPage extends StatelessWidget {
+class RegistroPage extends StatelessWidget {
   final usuarioProvider = new UsuarioProvider();
   @override
   Widget build(BuildContext context) {
@@ -115,7 +115,7 @@ class LoginPage extends StatelessWidget {
             child: Column(
               children: [
                 Text(
-                  'Ingreso',
+                  'Crear Cuenta',
                   style: TextStyle(fontSize: 20.0),
                 ),
                 SizedBox(
@@ -134,9 +134,8 @@ class LoginPage extends StatelessWidget {
             ),
           ),
           FlatButton(
-              onPressed: () =>
-                  Navigator.pushReplacementNamed(context, 'registro'),
-              child: Text('Crear una nueva cuenta')),
+              onPressed: () => Navigator.pushReplacementNamed(context, 'login'),
+              child: Text(' Ya tienes cuenta?')),
           SizedBox(
             height: 100.0,
           )
@@ -197,7 +196,7 @@ class LoginPage extends StatelessWidget {
         stream: bloc.formValidStream,
         builder: (BuildContext context, AsyncSnapshot snapshot) {
           return RaisedButton(
-            onPressed: snapshot.hasData ? () => _login(bloc, context) : null,
+            onPressed: snapshot.hasData ? () => _register(bloc, context) : null,
             child: Container(
               padding: EdgeInsets.symmetric(horizontal: 80.0, vertical: 15.0),
               child: Text('Ingresar'),
@@ -212,12 +211,15 @@ class LoginPage extends StatelessWidget {
         });
   }
 
-  _login(LoginBloc bloc, BuildContext context) async {
-    Map info = await usuarioProvider.login(bloc.email, bloc.password);
+  _register(LoginBloc bloc, BuildContext context) async {
+    print(bloc.password);
+    final info = await usuarioProvider.nuevoUsuario(bloc.email, bloc.password);
     if (info['ok']) {
       Navigator.pushReplacementNamed(context, 'home');
     } else {
       mostrarAlerta(context, info['mensaje']);
     }
+
+    //Navigator.pushReplacementNamed(context, 'home');
   }
 }
